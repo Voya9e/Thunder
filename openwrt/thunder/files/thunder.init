@@ -7,8 +7,21 @@ EXTRA_HELP="\tinstall\tInstall/initialize the upstream Thunder core"
 
 THUNDER=/usr/bin/thunder
 INSTALL_CONFIG=/etc/.thunder
-INSTALL_MARKER=/var/packages/pan-xunlei-com/target/var
+CORE_DIR=/var/packages/pan-xunlei-com/target
+INSTALL_MARKER=$CORE_DIR/var
 PIDFILE=/var/run/thunder-luci.pid
+INSTALL_LOCK=/var/lock/thunder-install.lock
+
+core_launcher() {
+	case "$(uname -m)" in
+		aarch64) echo "$CORE_DIR/xunlei-pan-cli-launcher.arm64" ;;
+		*) echo "$CORE_DIR/xunlei-pan-cli-launcher.amd64" ;;
+	esac
+}
+
+core_ready() {
+	[ -x "$(core_launcher)" ] &&	[ -x "$CORE_DIR/xunlei-pan-cli" ] &&	[ -x "$CORE_DIR/xunlei-pan-cli-web" ]
+}
 
 valid_path() {
 	case "$1" in
@@ -57,7 +70,7 @@ start_service() {
 	config_get auth_password main auth_password ''
 
 	[ -x "$THUNDER" ] || { logger -t thunder "Missing $THUNDER"; return 1; }
-	[ -d "$INSTALL_MARKER" ] || { logger -t thunder "Core not initialized; run /etc/init.d/thunder install first"; return 1; }
+	core_ready || { logger -t thunder "Core not initialized; use Services > Thunder > Settings to initialize it"; return 1; }
 	if [ -z "$auth_password" ]; then
 		case "$bind" in
 			127.0.0.1:*|'[::1]':*) ;;
@@ -82,7 +95,12 @@ start_service() {
 }
 
 install() {
-	local uid gid config_path download_path mount_path
+	local uid gid config_path download_path mount_path result partial
+	if ! mkdir "$INSTALL_LOCK" 2>/dev/null; then
+		echo "Core initialization is already running." >&2
+		return 1
+	fi
+	trap 'rmdir "$INSTALL_LOCK" 2>/dev/null' EXIT HUP INT TERM
 	config_load thunder
 	config_get uid main uid 0
 	config_get gid main gid 0
@@ -93,7 +111,23 @@ install() {
 	write_install_config "$uid" "$gid" "$config_path" "$download_path" "$mount_path" || {
 		echo "Invalid UID/GID or directory setting" >&2; return 1;
 	}
+	# The upstream installer creates its var directory before downloading the SPK
+	# and treats that directory alone as proof of a completed install. Preserve a
+	# partial marker so a failed first attempt can be retried safely.
+	if [ -d "$INSTALL_MARKER" ] && ! core_ready; then
+		partial="$CORE_DIR/var.partial.$$"
+		mv "$INSTALL_MARKER" "$partial" || { echo "Cannot recover partial core install" >&2; return 1; }
+		echo "Moved incomplete core state to $partial; retrying installation."
+	fi
 	"$THUNDER" install -U "$uid" -G "$gid" -c "$config_path" -d "$download_path" -m "$mount_path"
+	result=$?
+	if [ "$result" -eq 0 ] && ! core_ready; then
+		echo "Core initialization returned success, but required ARM/Linux core files are missing." >&2
+		result=1
+	fi
+	trap - EXIT HUP INT TERM
+	rmdir "$INSTALL_LOCK" 2>/dev/null
+	return "$result"
 }
 
 stop_service() {

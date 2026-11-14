@@ -23,11 +23,11 @@ SHA-256 checksums, in a uniquely tagged GitHub Release. It does not build a
 firmware image. Other firmware routes in the RAX3000M firmware project need
 their own matching SDK.
 
-The core package currently uses the upstream v1.0.3 x86_64 and aarch64 musl
-release assets. It does not compile this fork's Rust source yet. To distribute
-source changes in the core, publish matching binaries and update the pinned
-package URL and SHA-256 values. Other architectures are unsupported by this
-initial package recipe.
+The package uses the upstream v1.0.3 x86_64 and aarch64 musl release binaries
+for the Linux launcher and downloads the matching DSM 7 Synology SPK only when
+you explicitly initialize the core. The `bash` package is installed as a
+dependency for NAS Xiaoxing and speed-test plugins. Other architectures are
+unsupported by this initial package recipe.
 
 After installing the packages, open **Services → 迅雷** in LuCI. Use
 **Download and initialize core** to fetch and extract the official Synology

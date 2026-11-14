@@ -28,12 +28,13 @@ define Package/thunder
   CATEGORY:=Network
   TITLE:=迅雷远程下载服务
   URL:=https://github.com/0x676e67/thunder
-  DEPENDS:=@(x86_64||aarch64)
+  DEPENDS:=@(x86_64||aarch64) +bash
 endef
 
 define Package/thunder/description
- Synology NAS Thunder compatibility launcher for OpenWrt. The first start
- follows an explicit install action that fetches the upstream Synology package.
+ Synology NAS Thunder compatibility launcher for OpenWrt. The core is fetched
+ and initialized on demand from the official Synology SPK. Bash is required
+ by the NAS Xiaoxing and speed-test plugins.
 endef
 
 define Build/Prepare

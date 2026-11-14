@@ -28,7 +28,11 @@
 	</div>
 	<div class="thunder-card">
 		<div class="thunder-card-label"><%:迅雷核心%></div>
-		<div class="thunder-card-value <%=core_ready and 'thunder-ok' or 'thunder-warn'%>"><%=core_ready and translate("已初始化") or translate("尚未初始化")%></div>
+		<div class="thunder-card-value <%=install_running and 'thunder-warn' or (core_ready and 'thunder-ok' or 'thunder-warn')%>"><%=install_running and translate("初始化中") or (core_ready and translate("已初始化") or translate("尚未初始化"))%></div>
+	</div>
+	<div class="thunder-card">
+		<div class="thunder-card-label"><%:Bash 依赖%></div>
+		<div class="thunder-card-value <%=bash_ready and 'thunder-ok' or 'thunder-warn'%>"><%=bash_ready and translate("已安装") or translate("缺少 Bash")%></div>
 	</div>
 	<div class="thunder-card">
 		<div class="thunder-card-label"><%:程序版本%></div>
@@ -42,6 +46,9 @@
 
 <% if not core_ready then %>
 <div class="thunder-alert"><strong><%:需要初始化核心%></strong><br /><%:前往设置页点击“下载并初始化核心”。此操作会从迅雷服务器下载 Synology SPK，需要路由器可访问互联网。%></div>
+<% end %>
+<% if not bash_ready then %>
+<div class="thunder-alert"><strong><%:缺少 Bash%></strong><br /><%:NAS 小星和测速插件依赖 Bash。请安装 bash 软件包后再使用插件。%></div>
 <% end %>
 <details class="cbi-section">
 	<summary><%:最近的操作输出%></summary>

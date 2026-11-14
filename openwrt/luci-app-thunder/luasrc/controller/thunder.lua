@@ -19,7 +19,13 @@ function action_status()
 	local pidfile = "/var/run/thunder-luci.pid"
 	local running = sys.call("[ -r " .. pidfile .. " ] && kill -0 $(cat " .. pidfile .. ") 2>/dev/null") == 0
 	local installed = fs.access("/usr/bin/thunder", "x")
-	local core_ready = fs.access("/var/packages/pan-xunlei-com/target/xunlei-pan-cli-web", "x")
+	local core_dir = "/var/packages/pan-xunlei-com/target/"
+	local arch = sys.exec("uname -m 2>/dev/null"):gsub("%s+", "")
+	local launcher = arch == "aarch64" and "xunlei-pan-cli-launcher.arm64" or "xunlei-pan-cli-launcher.amd64"
+	local core_ready = fs.access(core_dir .. "xunlei-pan-cli-web", "x") and
+		fs.access(core_dir .. "xunlei-pan-cli", "x") and fs.access(core_dir .. launcher, "x")
+	local bash_ready = fs.access("/bin/bash", "x") or fs.access("/usr/bin/bash", "x")
+	local install_running = fs.access("/var/lock/thunder-install.lock")
 	local version = installed and sys.exec("/usr/bin/thunder --version 2>/dev/null") or ""
 	local enabled = sys.call("/etc/init.d/thunder enabled >/dev/null 2>&1") == 0
 	local install_log = ""
@@ -35,6 +41,8 @@ function action_status()
 		running = running,
 		installed = installed,
 		core_ready = core_ready,
+		bash_ready = bash_ready,
+		install_running = install_running,
 		version = version,
 		enabled = enabled,
 		install_log = install_log,

@@ -54,7 +54,7 @@ install.inputtitle = translate("下载并初始化核心")
 install.inputstyle = "apply"
 install.description = translate("仅在点击时从迅雷服务器下载并解包 Synology SPK；需要路由器可访问互联网。")
 function install.write()
-	sys.call("/etc/init.d/thunder install >/tmp/thunder-install.log 2>&1")
+	sys.call("( /etc/init.d/thunder install >/tmp/thunder-install.log 2>&1 ) </dev/null >/dev/null 2>&1 &")
 end
 
 local start = s:option(Button, "_start", translate("服务"))
