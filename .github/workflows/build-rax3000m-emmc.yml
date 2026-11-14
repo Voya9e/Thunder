@@ -110,8 +110,8 @@ jobs:
       - name: Compile packages
         working-directory: ${{ runner.temp }}/openwrt-sdk
         run: |
-          make package/feeds/thunder/thunder/compile -j"$(nproc)" V=s
-          make package/feeds/thunder/luci-app-thunder/compile -j"$(nproc)" V=s
+          make THUNDER_BIN="$THUNDER_BIN" package/feeds/thunder/thunder/compile -j"$(nproc)" V=s
+          make THUNDER_BIN="$THUNDER_BIN" package/feeds/thunder/luci-app-thunder/compile -j"$(nproc)" V=s
 
       - name: Collect installable packages
         working-directory: ${{ runner.temp }}/openwrt-sdk
