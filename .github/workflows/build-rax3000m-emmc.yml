@@ -1,0 +1,108 @@
+name: Build Thunder packages for RAX3000M eMMC
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: OpenWrt 25.12.6 · mediatek/filogic
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      OPENWRT_VERSION: 25.12.6
+      RELEASE_TAG: rax3000m-emmc-openwrt-25.12.6-build-${{ github.run_number }}-${{ github.run_attempt }}
+      SDK_URL: https://downloads.openwrt.org/releases/25.12.6/targets/mediatek/filogic/openwrt-sdk-25.12.6-mediatek-filogic_gcc-14.3.0_musl.Linux-x86_64.tar.zst
+      SDK_SHA256: 1c04ac47bdfc361d6aab299eb520d570e368013dedcb8d29cf39dc7168ae642e
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Require the default branch for releases
+        run: |
+          test "$GITHUB_REF" = "refs/heads/main" || {
+            echo "Run this release workflow from the main branch." >&2
+            exit 1
+          }
+
+      - name: Install SDK archive tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y zstd
+
+      - name: Download and verify RAX3000M SDK
+        run: |
+          curl --fail --location --retry 3 "$SDK_URL" -o "$RUNNER_TEMP/openwrt-sdk.tar.zst"
+          echo "$SDK_SHA256  $RUNNER_TEMP/openwrt-sdk.tar.zst" | sha256sum --check --status
+
+      - name: Prepare SDK and package feeds
+        run: |
+          mkdir "$RUNNER_TEMP/openwrt-sdk"
+          tar --zstd -xf "$RUNNER_TEMP/openwrt-sdk.tar.zst" \
+            --strip-components=1 -C "$RUNNER_TEMP/openwrt-sdk"
+          cd "$RUNNER_TEMP/openwrt-sdk"
+          cp feeds.conf.default feeds.conf
+          printf 'src-link thunder %s/openwrt\n' "$GITHUB_WORKSPACE" >> feeds.conf
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Select packages for the RAX3000M target
+        working-directory: ${{ runner.temp }}/openwrt-sdk
+        run: |
+          printf '%s\n' \
+            'CONFIG_PACKAGE_thunder=y' \
+            'CONFIG_PACKAGE_luci-app-thunder=y' >> .config
+          make defconfig
+
+      - name: Compile packages
+        working-directory: ${{ runner.temp }}/openwrt-sdk
+        run: |
+          make package/feeds/thunder/thunder/compile -j"$(nproc)" V=s
+          make package/feeds/thunder/luci-app-thunder/compile -j"$(nproc)" V=s
+
+      - name: Collect installable packages
+        working-directory: ${{ runner.temp }}/openwrt-sdk
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/dist"
+          find bin/packages -type f \
+            \( -name 'thunder*.apk' -o -name 'luci-app-thunder*.apk' \
+               -o -name 'thunder*.ipk' -o -name 'luci-app-thunder*.ipk' \) \
+            -exec cp -t "$GITHUB_WORKSPACE/dist" {} +
+          cat > "$GITHUB_WORKSPACE/dist/BUILD-INFO.txt" <<EOF
+          Device family: CMCC RAX3000M eMMC
+          OpenWrt release: $OPENWRT_VERSION
+          Target: mediatek/filogic
+          Package architecture: aarch64_cortex-a53
+          Packages: thunder, luci-app-thunder
+          This workflow builds packages only; it does not build router firmware images.
+          EOF
+          shopt -s nullglob
+          packages=("$GITHUB_WORKSPACE"/dist/thunder*.apk "$GITHUB_WORKSPACE"/dist/luci-app-thunder*.apk \
+                    "$GITHUB_WORKSPACE"/dist/thunder*.ipk "$GITHUB_WORKSPACE"/dist/luci-app-thunder*.ipk)
+          if [ "${#packages[@]}" -ne 2 ]; then
+            echo "Expected both Thunder packages; collected ${#packages[@]} package files." >&2
+            exit 1
+          fi
+          (cd "$GITHUB_WORKSPACE/dist" && find . -maxdepth 1 -type f \
+            \( -name 'thunder*.apk' -o -name 'luci-app-thunder*.apk' \
+               -o -name 'thunder*.ipk' -o -name 'luci-app-thunder*.ipk' \) \
+            -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+          ls -lh "$GITHUB_WORKSPACE/dist"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: RAX3000M eMMC Thunder packages · OpenWrt ${{ env.OPENWRT_VERSION }} · build ${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          body_path: dist/BUILD-INFO.txt
+          files: dist/*
+          draft: false
+          prerelease: false
+          make_latest: true
+          fail_on_unmatched_files: true
+

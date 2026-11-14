@@ -95,6 +95,18 @@ git clone https://github.com/gngpp/thunder && cd thunder
 cargo build --release && mv target/release/thunder .
 ```
 
+### OpenWrt / LuCI（实验性）
+
+OpenWrt package feed and LuCI integration are in [`openwrt/`](openwrt/README.md).
+The initial feed supports x86_64 and aarch64 and uses the upstream v1.0.3 musl
+binary package. OpenWrt support remains experimental; review the feed README
+before installing it.
+
+For the CMCC RAX3000M eMMC on the official OpenWrt 25.12 line, run the manual
+[GitHub Actions package build](.github/workflows/build-rax3000m-emmc.yml). It
+targets `mediatek/filogic` and builds installable packages only; it does not
+build firmware images or bootloader files.
+
 
 ### FQA
  - 当前大重构，`OpenWrt` / `Docker` 后续再完善支持

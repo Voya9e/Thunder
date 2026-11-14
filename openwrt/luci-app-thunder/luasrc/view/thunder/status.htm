@@ -1,0 +1,65 @@
+<%+header%>
+<style>
+	.thunder-dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin: 1em 0; }
+	.thunder-card { padding: 1em; border: 1px solid var(--border-color-medium, #ddd); border-radius: 6px; background: var(--background-color-high, #fff); }
+	.thunder-card-label { color: var(--text-color-secondary, #666); font-size: .9em; }
+	.thunder-card-value { margin-top: .4em; font-size: 1.15em; font-weight: 600; }
+	.thunder-ok { color: var(--success-color, #16833c); }
+	.thunder-warn { color: var(--warning-color, #9a6700); }
+	.thunder-muted { color: var(--text-color-secondary, #666); }
+	.thunder-alert { margin: .8em 0; padding: .8em 1em; border-left: 4px solid var(--warning-color, #d99b00); background: var(--background-color-high, #fff); }
+	.thunder-actions { display: flex; flex-wrap: wrap; gap: .5em; margin: 1em 0; }
+	.thunder-pre { max-height: 22em; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+</style>
+
+<h2><%:迅雷服务%></h2>
+<p class="thunder-muted"><%:查看服务、核心和运行依赖状态。%></p>
+
+<div class="thunder-actions">
+	<a class="btn cbi-button cbi-button-action" href="<%=luci.dispatcher.build_url('admin/services/thunder/status')%>"><%:刷新状态%></a>
+	<a class="btn cbi-button cbi-button-edit" href="<%=luci.dispatcher.build_url('admin/services/thunder/config')%>"><%:设置与服务控制%></a>
+	<a class="btn cbi-button cbi-button-edit" href="<%=luci.dispatcher.build_url('admin/services/thunder/log')%>"><%:查看日志%></a>
+</div>
+
+<div class="thunder-dashboard">
+	<div class="thunder-card">
+		<div class="thunder-card-label"><%:服务状态%></div>
+		<div class="thunder-card-value <%=running and 'thunder-ok' or 'thunder-warn'%>"><%=running and translate("运行中") or translate("已停止")%></div>
+	</div>
+	<div class="thunder-card">
+		<div class="thunder-card-label"><%:迅雷核心%></div>
+		<div class="thunder-card-value <%=core_ready and 'thunder-ok' or 'thunder-warn'%>"><%=core_ready and translate("已初始化") or translate("尚未初始化")%></div>
+	</div>
+	<div class="thunder-card">
+		<div class="thunder-card-label"><%:程序版本%></div>
+		<div class="thunder-card-value"><%=luci.util.pcdata(version ~= "" and version or translate("未知"))%></div>
+	</div>
+	<div class="thunder-card">
+		<div class="thunder-card-label"><%:开机启动%></div>
+		<div class="thunder-card-value"><%=enabled and translate("已启用") or translate("未启用")%></div>
+	</div>
+</div>
+
+<% if not core_ready then %>
+<div class="thunder-alert"><strong><%:需要初始化核心%></strong><br /><%:前往设置页点击“下载并初始化核心”。此操作会从迅雷服务器下载 Synology SPK，需要路由器可访问互联网。%></div>
+<% end %>
+<details class="cbi-section">
+	<summary><%:最近的操作输出%></summary>
+	<% if install_log and install_log ~= "" then %>
+	<h3><%:核心初始化%></h3>
+	<pre class="thunder-pre"><%=luci.util.pcdata(install_log)%></pre>
+	<% end %>
+	<% if service_log and service_log ~= "" then %>
+	<h3><%:服务控制%></h3>
+	<pre class="thunder-pre"><%=luci.util.pcdata(service_log)%></pre>
+	<% end %>
+	<% if (not install_log or install_log == "") and (not service_log or service_log == "") then %>
+	<p class="thunder-muted"><%:暂无操作记录。%></p>
+	<% end %>
+</details>
+
+<div class="cbi-section">
+	<p><%:OpenWrt 支持仍属实验性。核心 CLI 包升级请使用 OpenWrt 软件包管理器。核心卸载可能递归删除配置目录，因此 LuCI 不提供一键卸载。%></p>
+</div>
+<%+footer%>
+
