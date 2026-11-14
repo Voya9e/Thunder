@@ -1,7 +1,8 @@
 # OpenWrt / LuCI packages
 
 This directory is an OpenWrt package feed. It contains a `thunder` package for
-the upstream musl release binary and `luci-app-thunder` for service management.
+the Rust binary compiled from this repository and `luci-app-thunder` for
+service management.
 
 ## Build
 
@@ -15,6 +16,19 @@ echo 'src-link thunder /path/to/thunder/openwrt' >> feeds.conf
 make menuconfig
 ```
 
+Compile the Rust executable for the router first. Install Zig, Rust's
+`aarch64-unknown-linux-musl` target, and `cargo-zigbuild`, then build and pass
+the resulting binary into the OpenWrt SDK:
+
+```sh
+export CC_aarch64_unknown_linux_musl="zig cc -target aarch64-linux-musl"
+export CXX_aarch64_unknown_linux_musl="zig c++ -target aarch64-linux-musl"
+export AR_aarch64_unknown_linux_musl="zig ar"
+cargo zigbuild --release --target aarch64-unknown-linux-musl
+export THUNDER_BIN="$PWD/target/aarch64-unknown-linux-musl/release/thunder"
+make package/feeds/thunder/thunder/compile
+```
+
 For CMCC RAX3000M eMMC running the official OpenWrt 25.12 line, this repository
 also provides a manual GitHub Actions build at
 `.github/workflows/build-rax3000m-emmc.yml`. It uses the `mediatek/filogic`
@@ -23,11 +37,12 @@ SHA-256 checksums, in a uniquely tagged GitHub Release. It does not build a
 firmware image. Other firmware routes in the RAX3000M firmware project need
 their own matching SDK.
 
-The package uses the upstream v1.0.3 x86_64 and aarch64 musl release binaries
-for the Linux launcher and downloads the matching DSM 7 Synology SPK only when
-you explicitly initialize the core. The `bash` package is installed as a
-dependency for NAS Xiaoxing and speed-test plugins. Other architectures are
-unsupported by this initial package recipe.
+The RAX3000M workflow compiles this repository's source for
+`aarch64-unknown-linux-musl` with Cortex-A53 CPU tuning, then packages that
+binary through the official OpenWrt SDK. It downloads the matching DSM 7
+Synology SPK only when you explicitly initialize the core. The `bash` package
+is installed as a dependency for NAS Xiaoxing and speed-test plugins. Other
+architectures are unsupported by this initial package recipe.
 
 After installing the packages, open **Services → 迅雷** in LuCI. Use
 **Download and initialize core** to fetch and extract the official Synology

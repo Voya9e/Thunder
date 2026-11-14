@@ -21,6 +21,27 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v7
 
+      - name: Set up Rust for RAX3000M
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-unknown-linux-musl
+
+      - name: Set up Zig cross linker
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.13.0
+
+      - name: Compile this repository's Thunder source
+        run: |
+          cargo install cargo-zigbuild --version 0.24.1 --locked
+          export CC_aarch64_unknown_linux_musl="zig cc -target aarch64-linux-musl"
+          export CXX_aarch64_unknown_linux_musl="zig c++ -target aarch64-linux-musl"
+          export AR_aarch64_unknown_linux_musl="zig ar"
+          export RUSTFLAGS="-C target-cpu=cortex-a53"
+          cargo zigbuild --release --target aarch64-unknown-linux-musl
+          test -x target/aarch64-unknown-linux-musl/release/thunder
+          echo "THUNDER_BIN=$GITHUB_WORKSPACE/target/aarch64-unknown-linux-musl/release/thunder" >> "$GITHUB_ENV"
+
       - name: Require the default branch for releases
         run: |
           test "$GITHUB_REF" = "refs/heads/main" || {
@@ -76,6 +97,7 @@ jobs:
           OpenWrt release: $OPENWRT_VERSION
           Target: mediatek/filogic
           Package architecture: aarch64_cortex-a53
+          Thunder binary: compiled from this repository (aarch64-unknown-linux-musl)
           Packages: thunder, luci-app-thunder
           This workflow builds packages only; it does not build router firmware images.
           EOF

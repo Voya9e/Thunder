@@ -2,24 +2,11 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=thunder
 PKG_VERSION:=1.0.3
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 PKG_LICENSE:=MIT
 
-PKG_SOURCE_URL:=https://github.com/0x676e67/thunder/releases/download/v$(PKG_VERSION)
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
-
-ifeq ($(ARCH),x86_64)
-  THUNDER_TARGET:=x86_64-unknown-linux-musl
-  PKG_SOURCE:=thunder-$(PKG_VERSION)-$(THUNDER_TARGET).tar.gz
-  PKG_HASH:=2c10dd081bdb5707498575bc8273d80028467b0359d1bba93430d8ffeaa06f77
-else ifneq ($(findstring aarch64,$(ARCH)),)
-  THUNDER_TARGET:=aarch64-unknown-linux-musl
-  PKG_SOURCE:=thunder-$(PKG_VERSION)-$(THUNDER_TARGET).tar.gz
-  PKG_HASH:=401bbfad610f587d8b70dd647985dcc4397052a857246de128ee114a72c10fd4
-else
-  PKG_SOURCE:=unsupported-architecture.tar.gz
-  PKG_HASH:=skip
-endif
+THUNDER_BIN?=
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -39,10 +26,12 @@ endef
 
 define Build/Prepare
 	mkdir -p $(PKG_BUILD_DIR)
-	tar -xzf $(DL_DIR)/$(PKG_SOURCE) -C $(PKG_BUILD_DIR)
+	@test -n "$(THUNDER_BIN)" -a -x "$(THUNDER_BIN)" || { echo "Set THUNDER_BIN to the compiled Thunder binary" >&2; exit 1; }
+	$(INSTALL_BIN) "$(THUNDER_BIN)" $(PKG_BUILD_DIR)/thunder
 endef
 
 define Build/Compile
+	@test -x $(PKG_BUILD_DIR)/thunder
 endef
 
 define Package/thunder/install
