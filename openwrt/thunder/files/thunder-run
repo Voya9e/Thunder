@@ -1,4 +1,7 @@
 #!/bin/sh
+# OpenWrt's procd may set this for line-buffered service logs. It breaks the
+# bundled Xunlei launcher, so keep it out of Thunder and its child processes.
+unset LD_PRELOAD
 echo "$$" > /var/run/thunder-luci.pid
 exec "$@"
 
