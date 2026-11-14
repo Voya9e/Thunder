@@ -60,9 +60,10 @@ pub(crate) fn ld_env(envs: &mut std::collections::HashMap<String, String>) -> Re
                 if sys_lib_path.exists().not() {
                     util::create_dir_all(&sys_lib_path, 0o755)?
                 }
-                // Compatible MUSL systems may come with libc
-                if sys_ld_path.exists() {
-                    let real_ld_path = std::fs::canonicalize(&sys_ld_path)?;
+                // Compatible MUSL systems may already provide this loader.
+                // canonicalize handles valid symlinks; symlink_metadata below
+                // lets us recover a stale package link after an interrupted install.
+                if let Ok(real_ld_path) = std::fs::canonicalize(&sys_ld_path) {
                     let real_lib_path = real_ld_path.parent().context(format!(
                         "The library path does not exist: {}",
                         real_ld_path.display()
@@ -79,6 +80,28 @@ pub(crate) fn ld_env(envs: &mut std::collections::HashMap<String, String>) -> Re
                     log::info!("LD_LIBRARY_PATH={}", format!("{}", real_lib_path.display()));
                     return Ok(());
                 }
+
+                match std::fs::symlink_metadata(&sys_ld_path) {
+                    Ok(metadata) if metadata.file_type().is_symlink() => {
+                        let current_target = std::fs::read_link(&sys_ld_path)?;
+                        if current_target.starts_with(Path::new(constant::SYNOPKG_PKGBASE)) {
+                            std::fs::remove_file(&sys_ld_path)?;
+                        } else {
+                            anyhow::bail!(
+                                "The compatibility loader link {} -> {} is broken and is not owned by Thunder",
+                                sys_ld_path.display(),
+                                current_target.display()
+                            );
+                        }
+                    }
+                    Ok(_) => anyhow::bail!(
+                        "The compatibility loader path {} exists but cannot be resolved",
+                        sys_ld_path.display()
+                    ),
+                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                    Err(error) => return Err(error.into()),
+                }
+
                 let syno_ld_path = Path::new(constant::SYNOPKG_LIB).join(LD);
                 nix::unistd::symlinkat(&syno_ld_path, None, &sys_ld_path)?;
 
