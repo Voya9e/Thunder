@@ -1,4 +1,4 @@
-# thunder
+# Thunder
 [![CI](https://github.com/gngpp/thunder/actions/workflows/CI.yml/badge.svg)](https://github.com/gngpp/thunder/actions/workflows/CI.yml)
 <a href="/LICENSE">
     <img src="https://img.shields.io/github/license/gngpp/thunder?style=flat">
@@ -10,7 +10,7 @@
   </a>
   [![Docker Image](https://img.shields.io/docker/pulls/gngpp/xunlei.svg)](https://hub.docker.com/r/gngpp/xunlei/)
 
-thunder从迅雷群晖套件中提取，用于发行版Linux（支持OpenWrt/Alpine/Docker）的迅雷远程下载服务。仅供测试，测试完请自觉删除。
+Thunder 从迅雷群晖套件中提取，用于发行版 Linux（支持 OpenWrt/Alpine/Docker）的迅雷远程下载服务。仅供测试，测试完请自觉删除。
 
 - 支持X86_64/aarch64
 - 支持glibc/musl
@@ -25,7 +25,7 @@ thunder从迅雷群晖套件中提取，用于发行版Linux（支持OpenWrt/Alp
 
 ```shell
 ❯ ./thunder                   
-Synology NAS thunder run on Linux
+Synology NAS Thunder run on Linux
 
 Usage: thunder
        thunder <COMMAND>
@@ -108,7 +108,7 @@ targets `mediatek/filogic` and builds installable packages only; it does not
 build firmware images or bootloader files.
 
 
-### FQA
+### FAQ
  - 当前大重构，`OpenWrt` / `Docker` 后续再完善支持
  - musl运行库的操作系统，若已存在glibc运行库，那么会优先兼容选择使用操作系统运行库环境（避免对系统其他软件依赖冲突，可能会缺依赖，自行补全）
  - 指定运行LD加载库或压缩目前无法做到（二进制带签名），需要逆向打patch

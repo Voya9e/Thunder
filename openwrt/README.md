@@ -1,6 +1,6 @@
 # OpenWrt / LuCI packages
 
-This directory is an OpenWrt package feed. It contains a `thunder` package for
+This directory is the Thunder OpenWrt package feed. It contains a `thunder` package for
 the Rust binary compiled from this repository and `luci-app-thunder` for
 service management. The LuCI app uses JavaScript views and a small rpcd ucode
 plugin (`luci.thunder`) for status, logs, configuration, and service actions.
