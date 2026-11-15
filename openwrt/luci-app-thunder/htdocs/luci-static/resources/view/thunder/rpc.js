@@ -105,7 +105,7 @@ return view.extend({
 			this.nav(),
 			E('section', { 'class': 'thunder-intro' }, [
 				E('h2', [ _('迅雷') ]),
-				E('p', [ _('thunder 从迅雷群晖套件中提取，用于发行版 Linux（支持 OpenWrt / Alpine / Docker）的迅雷远程下载服务。') ]),
+				E('p', [ _('Thunder 从迅雷群晖套件中提取，用于发行版 Linux（支持 OpenWrt / Alpine / Docker）的迅雷远程下载服务。') ]),
 				E('p', [ _('仅供测试，测试完成后请自觉删除。') ])
 			]),
 			E('div', { 'class': 'thunder-dashboard' }, [
