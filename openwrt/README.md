@@ -48,6 +48,23 @@ Synology SPK only when you explicitly initialize the core. The `bash` package
 is installed as a dependency for NAS Xiaoxing and speed-test plugins. Other
 architectures are unsupported by this initial package recipe.
 
+### Install packages over SSH on OpenWrt 25.12
+
+The workflow publishes standalone APK files, which are not signed with a key
+trusted by your router. After copying both APKs to the router, install them
+with OpenWrt's APK package manager and explicitly allow the unsigned local
+packages:
+
+```sh
+apk add --allow-untrusted /tmp/thunder-*.apk /tmp/luci-app-thunder-*.apk
+```
+
+Use this only for packages obtained from a source you trust. Verify the
+release's `SHA256SUMS` before copying them to the router. This option applies
+to these local APK files; it does not configure the router to trust an
+unsigned package feed. For a private feed, sign its packages with your own
+APK key and install the corresponding public key on the router instead.
+
 After installing the packages, open **Services → 迅雷** in LuCI. Use
 **Download and initialize core** to fetch and extract the official Synology
 SPK, then start the service. The download is initiated only by that explicit
