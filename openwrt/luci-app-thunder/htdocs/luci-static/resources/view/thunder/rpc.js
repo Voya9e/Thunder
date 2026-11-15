@@ -56,22 +56,20 @@ function logbox(title, text) {
 function page(title, children) {
 	return E('div', { 'class': 'cbi-map thunder-page' }, [
 		E('style', [
-			'.thunder-page{max-width:1180px;margin:0 auto;padding-bottom:2em}',
-			'.thunder-nav{display:flex;gap:.45em;flex-wrap:wrap;margin:0 0 1.5em;padding:.35em;border:1px solid var(--border-color-medium,#d8dee8);border-radius:10px;background:var(--background-color-high,#fff)}',
-			'.thunder-nav a{display:inline-block;padding:.68em 1.1em;border-radius:7px;color:var(--text-color-primary,#253247);text-decoration:none;transition:background .15s,color .15s}',
-			'.thunder-nav a:hover{background:var(--background-color-low,#f1f4f8)}.thunder-nav a.active{background:var(--primary-color,#356fe0);color:#fff;font-weight:650}',
+			'.thunder-page{width:100%;max-width:none;margin:0;padding:0 0 2em;box-sizing:border-box}',
 			'.thunder-intro,.thunder-panel,.thunder-form-group,.thunder-core-action{padding:1.25em 1.4em;margin:1em 0;border:1px solid var(--border-color-medium,#d8dee8);border-radius:10px;background:var(--background-color-high,#fff);box-shadow:0 2px 8px rgba(24,39,75,.045)}',
 			'.thunder-intro{border-left:4px solid var(--primary-color,#356fe0)}.thunder-intro h2{margin:.1em 0 .4em;font-size:1.5em}.thunder-intro p,.thunder-muted,.thunder-field-help{color:var(--text-color-secondary,#64748b)}.thunder-intro p:last-child{margin-bottom:0}',
 			'.thunder-form-group h3,.thunder-panel h3,.thunder-core-action h3{margin:.1em 0 1em;font-size:1.08em}',
 			'.thunder-field{display:grid;grid-template-columns:minmax(190px,250px) minmax(220px,1fr);align-items:center;gap:.5em 1.25em;padding:1em 0;border-bottom:1px solid var(--border-color-medium,#e6eaf0)}.thunder-field:last-child{border-bottom:0}',
-			'.thunder-field label{font-weight:600}.thunder-field-help{grid-column:2;font-size:.9em;line-height:1.45}.thunder-field input{width:100%;max-width:44em;min-height:2.65em;box-sizing:border-box;border:1px solid var(--border-color-medium,#cbd5e1);border-radius:6px;padding:.45em .7em;background:var(--background-color-high,#fff);color:var(--text-color-primary,#1e293b)}.thunder-field input:focus{border-color:var(--primary-color,#356fe0);outline:2px solid rgba(53,111,224,.16)}',
+			'.thunder-field label{font-weight:600}.thunder-field-help{grid-column:2;font-size:.9em;line-height:1.45}.thunder-field input{width:100%;max-width:44em;min-height:2.65em;box-sizing:border-box;border:1px solid var(--border-color-medium,#cbd5e1);border-radius:6px;padding:.45em .7em;background:var(--background-color-high,#fff);color:inherit;caret-color:currentColor}.thunder-field input:focus{border-color:var(--primary-color,#356fe0);outline:2px solid rgba(53,111,224,.16)}',
 			'.thunder-dashboard{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin:1em 0}',
 			'.thunder-card{position:relative;overflow:hidden;padding:1.1em 1.2em;border:1px solid var(--border-color-medium,#d8dee8);border-radius:10px;background:var(--background-color-high,#fff);box-shadow:0 2px 8px rgba(24,39,75,.045)}',
 			'.thunder-card-label{color:var(--text-color-secondary,#64748b);font-size:.9em}.thunder-card-value{margin-top:.55em;font-size:1.22em;font-weight:650}',
 			'.thunder-ok{color:var(--success-color,#16833d)}.thunder-warn{color:var(--warning-color,#ad6a00)}',
 			'.thunder-actions{display:flex;align-items:center;flex-wrap:wrap;gap:.65em;margin:.85em 0}.thunder-actions .btn{min-height:2.55em;padding:.45em 1em;border-radius:6px;cursor:pointer}.thunder-actions .btn:disabled{opacity:.6;cursor:wait}.thunder-state-button.active{box-shadow:inset 0 0 0 2px var(--primary-color,#356fe0);font-weight:700}',
 			'.thunder-pre{max-height:40em;min-height:18em;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;margin:0;font:13px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace}',
-			'.thunder-log-content{padding:1.1em;border:1px solid var(--border-color-medium,#d8dee8);border-radius:7px;background:var(--background-color-low,#f5f7fa);color:var(--text-color-primary,#263445)}',
+			'.thunder-log-content{padding:1.1em;border:1px solid var(--border-color-medium,#d8dee8);border-radius:7px;background:var(--background-color-low,#f5f7fa);color:inherit}',
+			'.thunder-pre::selection{color:#fff;background:var(--primary-color,#356fe0)}',
 			'.thunder-empty{display:flex;min-height:16em;align-items:center;justify-content:center;border:1px dashed var(--border-color-medium,#cbd5e1);border-radius:7px;color:var(--text-color-secondary,#64748b)}',
 			'.thunder-alert{margin:1em 0;border-radius:7px}',
 			'.thunder-core-action{border-left:4px solid var(--warning-color,#d79a20)}',
@@ -102,7 +100,6 @@ return view.extend({
 	},
 	renderStatus: function(s) {
 		return page(null, [
-			this.nav(),
 			E('section', { 'class': 'thunder-intro' }, [
 				E('h2', [ _('迅雷') ]),
 				E('p', [ _('Thunder 从迅雷群晖套件中提取，用于发行版 Linux（支持 OpenWrt / Alpine / Docker）的迅雷远程下载服务。') ]),
@@ -149,12 +146,8 @@ return view.extend({
 			buttons.push(button);
 			tabs.appendChild(button);
 		});
-		return page(_('运行日志'), [
-			this.nav(),
-			E('section', { 'class': 'thunder-intro' }, [
-				E('h2', [ _('运行日志') ]),
-				E('p', [ _('包括核心日志以及服务日志。选择日志类型查看对应内容。') ])
-			]),
+		return page(null, [
+			E('p', { 'class': 'thunder-muted' }, [ _('包括核心日志以及服务日志。选择日志类型查看对应内容。') ]),
 			E('section', { 'class': 'thunder-panel' }, [ tabs, content ])
 		]);
 	},
@@ -206,21 +199,9 @@ return view.extend({
 				button(_('下载并初始化核心'), 'install', 'cbi-button-action')
 			])
 		]);
-		return page(_('插件设置'), [
-			this.nav(),
-			E('section', { 'class': 'thunder-intro' }, [
-				E('h2', [ _('插件设置') ]),
-				E('p', [ _('配置迅雷内核、保存目录和监听地址后，请重启服务使设置生效。') ])
-			]),
+		return page(null, [
+			E('p', { 'class': 'thunder-muted' }, [ _('配置迅雷内核、保存目录和监听地址后，请重启服务使设置生效。') ]),
 			form
-		]);
-	},
-	nav: function() {
-		const path = location.pathname;
-		return E('nav', { 'class': 'thunder-nav' }, [
-			E('a', { 'class': path.endsWith('/status') ? 'active' : '', 'href': L.url('admin/services/thunder/status') }, [ _('运行状态') ]),
-			E('a', { 'class': path.endsWith('/config') ? 'active' : '', 'href': L.url('admin/services/thunder/config') }, [ _('插件设置') ]),
-			E('a', { 'class': path.endsWith('/log') ? 'active' : '', 'href': L.url('admin/services/thunder/log') }, [ _('运行日志') ])
 		]);
 	},
 	handleSave: null, handleSaveApply: null, handleReset: null
