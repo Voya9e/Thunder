@@ -1,0 +1,15 @@
+{
+	"luci-app-thunder": {
+		"description": "Manage the Thunder service through LuCI",
+		"read": {
+			"ubus": {
+				"luci.thunder": [ "status", "logs", "config" ]
+			}
+		},
+		"write": {
+			"ubus": {
+				"luci.thunder": [ "start", "stop", "restart", "install", "save_config", "boot" ]
+			}
+		}
+	}
+}

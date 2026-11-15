@@ -1,0 +1,138 @@
+#!/usr/bin/ucode
+
+'use strict';
+
+import { access, popen } from 'fs';
+import { cursor } from 'uci';
+
+const PIDFILE = '/var/run/thunder-luci.pid';
+const CORE_DIR = '/var/packages/pan-xunlei-com/target';
+
+function read_command(command) {
+	const fd = popen(command);
+	if (!fd)
+		return '';
+
+	const output = fd.read('all');
+	fd.close();
+	return trim(output ?? '');
+}
+
+function run_command(command) {
+	return system(command) == 0;
+}
+
+function valid_path(path) {
+	return type(path) == 'string' && substr(path, 0, 1) == '/' &&
+		match(path, /[\r\n=]/) == null;
+}
+
+function status() {
+	const installed = access('/usr/bin/thunder', 'x');
+	const arch = trim(read_command('uname -m 2>/dev/null'));
+	const launcher = arch == 'aarch64' ? 'xunlei-pan-cli-launcher.arm64' : 'xunlei-pan-cli-launcher.amd64';
+	const core_ready = access(`${CORE_DIR}/xunlei-pan-cli-web`, 'x') &&
+		access(`${CORE_DIR}/xunlei-pan-cli`, 'x') && access(`${CORE_DIR}/${launcher}`, 'x');
+	const pid = trim(read_command(`cat ${PIDFILE} 2>/dev/null`));
+	const running = match(pid, /^[0-9]+$/) != null && system(`kill -0 ${pid} 2>/dev/null`) == 0;
+	const result = {
+		running,
+		installed,
+		core_ready,
+		bash_ready: access('/bin/bash', 'x') || access('/usr/bin/bash', 'x'),
+		install_running: access('/var/lock/thunder-install.lock'),
+		version: installed ? read_command('/usr/bin/thunder --version 2>/dev/null') : '',
+		enabled: system('/etc/init.d/thunder enabled >/dev/null 2>&1') == 0,
+		install_log: read_command('tail -n 30 /tmp/thunder-install.log 2>/dev/null'),
+		service_log: read_command('tail -n 30 /tmp/thunder-service.log 2>/dev/null')
+	};
+	return result;
+}
+
+function logs() {
+	return {
+		service: read_command('logread -e thunder 2>/dev/null | tail -n 200'),
+		core: read_command('for f in /var/packages/pan-xunlei-com/target/var/pan-xunlei-com.log /var/packages/pan-xunlei-com/target/var/pan-xunlei-com-launcher.log /var/packages/pan-xunlei-com/target/var/pan-xunlei-com_install.log; do if [ -r "$f" ]; then echo "--- $f ---"; tail -n 200 "$f"; fi; done')
+	};
+}
+
+function save_config(req) {
+	const args = req.args;
+	if (!valid_path(args.config_path) || !valid_path(args.download_path) || !valid_path(args.mount_bind_download_path))
+		return { error: '目录必须是有效的绝对路径' };
+	if (match(args.bind ?? '', /^[^\r\n]+:[0-9]+$/) == null)
+		return { error: '监听地址格式应为 IP:端口' };
+
+	const uci = cursor();
+	uci.set('thunder', 'main', 'enabled', args.enabled == '1' ? '1' : '0');
+	uci.set('thunder', 'main', 'config_path', args.config_path);
+	uci.set('thunder', 'main', 'download_path', args.download_path);
+	uci.set('thunder', 'main', 'mount_bind_download_path', args.mount_bind_download_path);
+	uci.set('thunder', 'main', 'bind', args.bind);
+	uci.set('thunder', 'main', 'auth_password', args.auth_password ?? '');
+	if (!uci.commit('thunder')) {
+		uci.unload();
+		return { error: '保存 UCI 配置失败' };
+	}
+	uci.unload();
+
+	const enabled = args.enabled == '1';
+	run_command(enabled ? '/etc/init.d/thunder enable' : '/etc/init.d/thunder disable');
+	return { ok: true, message: '配置已保存；运行参数将在服务重启后生效' };
+}
+
+function set_boot(req) {
+	const enabled = req.args.enabled;
+	const uci = cursor();
+	uci.set('thunder', 'main', 'enabled', enabled ? '1' : '0');
+	if (!uci.commit('thunder')) {
+		uci.unload();
+		return { ok: false, error: '保存开机启动配置失败' };
+	}
+	uci.unload();
+	const ok = system(enabled ? '/etc/init.d/thunder enable' : '/etc/init.d/thunder disable') == 0;
+	return { ok, enabled, message: ok ? (enabled ? '已启用开机启动' : '已关闭开机启动') : '修改开机启动状态失败' };
+}
+
+const methods = {
+	status: { call: status },
+	logs: { call: logs },
+	config: {
+		call: function() {
+			const uci = cursor();
+			const result = {};
+			result.enabled = uci.get('thunder', 'main', 'enabled') ?? '0';
+			result.config_path = uci.get('thunder', 'main', 'config_path') ?? '/opt/thunder';
+			result.download_path = uci.get('thunder', 'main', 'download_path') ?? '/opt/thunder/downloads';
+			result.mount_bind_download_path = uci.get('thunder', 'main', 'mount_bind_download_path') ?? '/thunder';
+			result.bind = uci.get('thunder', 'main', 'bind') ?? '0.0.0.0:5055';
+			result.auth_password_set = !!uci.get('thunder', 'main', 'auth_password');
+			uci.unload();
+			return result;
+		}
+	},
+	save_config: {
+		args: {
+			enabled: '', config_path: '', download_path: '',
+			mount_bind_download_path: '', bind: '', auth_password: ''
+		},
+		call: save_config
+	},
+	start: { call: function() { return { ok: run_command('/etc/init.d/thunder start >/tmp/thunder-service.log 2>&1') }; } },
+	stop: { call: function() { return { ok: run_command('/etc/init.d/thunder stop >/tmp/thunder-service.log 2>&1') }; } },
+	restart: { call: function() { return { ok: run_command('/etc/init.d/thunder restart >/tmp/thunder-service.log 2>&1') }; } },
+	boot: {
+		args: { enabled: true },
+		call: set_boot
+	},
+	install: {
+		call: function() {
+			if (access('/var/lock/thunder-install.lock'))
+				return { ok: false, error: '迅雷核心正在初始化' };
+			const ok = system('( /etc/init.d/thunder install >/tmp/thunder-install.log 2>&1 ) </dev/null >/dev/null 2>&1 &') == 0;
+			return { ok, message: ok ? '已启动核心初始化' : '无法启动核心初始化' };
+		}
+	}
+};
+
+return { 'luci.thunder': methods };
