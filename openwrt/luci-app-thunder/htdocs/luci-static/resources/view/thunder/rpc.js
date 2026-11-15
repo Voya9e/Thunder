@@ -53,11 +53,19 @@ function logbox(title, text) {
 	]);
 }
 
+function descriptionBox(title, descriptions) {
+	return E('section', { 'class': 'thunder-intro' }, [
+		E('h2', [ title ]),
+		...descriptions.map(text => E('p', [ text ]))
+	]);
+}
+
 function page(title, children) {
 	return E('div', { 'class': 'cbi-map thunder-page' }, [
 		E('style', [
 			'.thunder-page{width:100%;max-width:none;margin:0;padding:0 0 2em;box-sizing:border-box}',
 			'.thunder-intro,.thunder-panel,.thunder-form-group,.thunder-core-action{padding:1.25em 1.4em;margin:1em 0;border:1px solid var(--border-color-medium,#d8dee8);border-radius:10px;background:var(--background-color-high,#fff);box-shadow:0 2px 8px rgba(24,39,75,.045)}',
+			'.thunder-page>.thunder-intro{margin-top:0}',
 			'.thunder-intro{border-left:4px solid var(--primary-color,#356fe0)}.thunder-intro h2{margin:.1em 0 .4em;font-size:1.5em}.thunder-intro p,.thunder-muted,.thunder-field-help{color:var(--text-color-secondary,#64748b)}.thunder-intro p:last-child{margin-bottom:0}',
 			'.thunder-form-group h3,.thunder-panel h3,.thunder-core-action h3{margin:.1em 0 1em;font-size:1.08em}',
 			'.thunder-field{display:grid;grid-template-columns:minmax(190px,250px) minmax(220px,1fr);align-items:center;gap:.5em 1.25em;padding:1em 0;border-bottom:1px solid var(--border-color-medium,#e6eaf0)}.thunder-field:last-child{border-bottom:0}',
@@ -73,7 +81,7 @@ function page(title, children) {
 			'.thunder-empty{display:flex;min-height:16em;align-items:center;justify-content:center;border:1px dashed var(--border-color-medium,#cbd5e1);border-radius:7px;color:var(--text-color-secondary,#64748b)}',
 			'.thunder-alert{margin:1em 0;border-radius:7px}',
 			'.thunder-core-action{border-left:4px solid var(--warning-color,#d79a20)}',
-			'@media(max-width:700px){.thunder-page{padding:0 .25em 1.5em}.thunder-field{grid-template-columns:1fr;gap:.45em}.thunder-field-help{grid-column:1}.thunder-intro,.thunder-panel,.thunder-form-group,.thunder-core-action{padding:1em}.thunder-nav a{flex:1;text-align:center;padding:.65em .5em}}'
+			'@media(max-width:700px){.thunder-page{padding:0 .25em 1.5em}.thunder-field{grid-template-columns:1fr;gap:.45em}.thunder-field-help{grid-column:1}.thunder-intro,.thunder-panel,.thunder-form-group,.thunder-core-action{padding:1em}}'
 		].join('\n')),
 		...(title ? [ E('h2', [ title ]) ] : []),
 		...children
@@ -100,10 +108,9 @@ return view.extend({
 	},
 	renderStatus: function(s) {
 		return page(null, [
-			E('section', { 'class': 'thunder-intro' }, [
-				E('h2', [ _('迅雷') ]),
-				E('p', [ _('Thunder 从迅雷群晖套件中提取，用于发行版 Linux（支持 OpenWrt / Alpine / Docker）的迅雷远程下载服务。') ]),
-				E('p', [ _('仅供测试，测试完成后请自觉删除。') ])
+			descriptionBox(_('迅雷'), [
+				_('Thunder 从迅雷群晖套件中提取，用于发行版 Linux（支持 OpenWrt / Alpine / Docker）的迅雷远程下载服务。'),
+				_('仅供测试，测试完成后请自觉删除。')
 			]),
 			E('div', { 'class': 'thunder-dashboard' }, [
 				card(_('服务状态'), s.running ? _('运行中') : _('已停止'), s.running),
@@ -147,7 +154,7 @@ return view.extend({
 			tabs.appendChild(button);
 		});
 		return page(null, [
-			E('p', { 'class': 'thunder-muted' }, [ _('包括核心日志以及服务日志。选择日志类型查看对应内容。') ]),
+			descriptionBox(_('运行日志'), [ _('包括核心日志以及服务日志。选择日志类型查看对应内容。') ]),
 			E('section', { 'class': 'thunder-panel' }, [ tabs, content ])
 		]);
 	},
@@ -200,7 +207,7 @@ return view.extend({
 			])
 		]);
 		return page(null, [
-			E('p', { 'class': 'thunder-muted' }, [ _('配置迅雷内核、保存目录和监听地址后，请重启服务使设置生效。') ]),
+			descriptionBox(_('插件设置'), [ _('配置迅雷内核、保存目录和监听地址后，请重启服务使设置生效。') ]),
 			form
 		]);
 	},
