@@ -7,6 +7,7 @@ import { cursor } from 'uci';
 
 const PIDFILE = '/var/run/thunder-luci.pid';
 const CORE_DIR = '/var/packages/pan-xunlei-com/target';
+const DEFAULT_BIND = '0.0.0.0:5055';
 
 function read_command(command) {
 	const fd = popen(command);
@@ -37,6 +38,7 @@ function status() {
 	const running = match(pid, /^[0-9]+$/) != null && system(`kill -0 ${pid} 2>/dev/null`) == 0;
 	const result = {
 		running,
+		bind: cursor().get('thunder', 'main', 'bind') ?? DEFAULT_BIND,
 		installed,
 		core_ready,
 		bash_ready: access('/bin/bash', 'x') || access('/usr/bin/bash', 'x'),
@@ -105,7 +107,7 @@ const methods = {
 			result.config_path = uci.get('thunder', 'main', 'config_path') ?? '/opt/thunder';
 			result.download_path = uci.get('thunder', 'main', 'download_path') ?? '/opt/thunder/downloads';
 			result.mount_bind_download_path = uci.get('thunder', 'main', 'mount_bind_download_path') ?? '/thunder';
-			result.bind = uci.get('thunder', 'main', 'bind') ?? '0.0.0.0:5055';
+			result.bind = uci.get('thunder', 'main', 'bind') ?? DEFAULT_BIND;
 			result.auth_password_set = !!uci.get('thunder', 'main', 'auth_password');
 			uci.unload();
 			return result;

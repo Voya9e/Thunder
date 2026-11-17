@@ -60,6 +60,36 @@ function descriptionBox(title, descriptions) {
 	]);
 }
 
+function webPanelButton(bind) {
+	const label = _('打开 Web 界面');
+	if (/^(?:\[[0-9a-f:.]+\]|[0-9.]+):[0-9]+$/i.test(bind)) {
+		try {
+			const url = new URL(`http://${bind}/`);
+			if (url.hostname === '0.0.0.0' || url.hostname === '[::]')
+				url.hostname = location.hostname;
+
+			// A loopback address would open the browser's own machine.
+			const loopback = url.hostname.startsWith('127.') || url.hostname === '[::1]';
+			if (!loopback || url.hostname === location.hostname) {
+				return E('a', {
+					'class': 'btn cbi-button-action',
+					'href': url.href,
+					'target': '_blank',
+					'rel': 'noopener noreferrer'
+				}, [ label, E('span', { 'aria-hidden': 'true' }, [ ' ↗' ]) ]);
+			}
+		} catch (err) {
+			// An invalid listener has no usable Web link.
+		}
+	}
+	return E('button', {
+		'class': 'btn cbi-button-action',
+		'type': 'button',
+		'disabled': true,
+		'title': _('请在插件设置中配置可从浏览器访问的监听地址。')
+	}, [ label ]);
+}
+
 function page(title, children) {
 	return E('div', { 'class': 'cbi-map thunder-page' }, [
 		E('style', [
@@ -71,6 +101,8 @@ function page(title, children) {
 			'.thunder-field{display:grid;grid-template-columns:minmax(190px,250px) minmax(220px,1fr);align-items:center;gap:.5em 1.25em;padding:1em 0;border-bottom:1px solid var(--border-color-medium,#e6eaf0)}.thunder-field:last-child{border-bottom:0}',
 			'.thunder-field label{font-weight:600}.thunder-field-help{grid-column:2;font-size:.9em;line-height:1.45}.thunder-field input{width:100%;max-width:44em;min-height:2.65em;box-sizing:border-box;border:1px solid var(--border-color-medium,#cbd5e1);border-radius:6px;padding:.45em .7em;background:var(--background-color-high,#fff);color:inherit;caret-color:currentColor}.thunder-field input:focus{border-color:var(--primary-color,#356fe0);outline:2px solid rgba(53,111,224,.16)}',
 			'.thunder-dashboard{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin:1em 0}',
+			'.thunder-quick-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,16em),1fr));gap:14px;margin:1em 0}',
+			'.thunder-quick-actions>.thunder-panel{margin:0}.thunder-web-panel{display:flex;align-items:center}',
 			'.thunder-card{position:relative;overflow:hidden;padding:1.1em 1.2em;border:1px solid var(--border-color-medium,#d8dee8);border-radius:10px;background:var(--background-color-high,#fff);box-shadow:0 2px 8px rgba(24,39,75,.045)}',
 			'.thunder-card-label{color:var(--text-color-secondary,#64748b);font-size:.9em}.thunder-card-value{margin-top:.55em;font-size:1.22em;font-weight:650}',
 			'.thunder-ok{color:var(--success-color,#16833d)}.thunder-warn{color:var(--warning-color,#ad6a00)}',
@@ -117,11 +149,16 @@ return view.extend({
 				card(_('迅雷核心'), s.install_running ? _('初始化中') : (s.core_ready ? _('已初始化') : _('未初始化')), s.core_ready),
 				card(_('Bash 依赖'), s.bash_ready ? _('已安装') : _('未安装'), s.bash_ready)
 			]),
-			E('section', { 'class': 'thunder-panel' }, [
-				E('h3', [ _('开机启动') ]),
-				E('div', { 'class': 'thunder-actions' }, [
-					button(_('已启用'), 'boot', `thunder-state-button ${s.enabled ? 'active cbi-button-positive' : ''}`, true),
-					button(_('已关闭'), 'boot', `thunder-state-button ${!s.enabled ? 'active cbi-button-negative' : ''}`, false)
+			E('div', { 'class': 'thunder-quick-actions' }, [
+				E('section', { 'class': 'thunder-panel' }, [
+					E('h3', [ _('开机启动') ]),
+					E('div', { 'class': 'thunder-actions' }, [
+						button(_('已启用'), 'boot', `thunder-state-button ${s.enabled ? 'active cbi-button-positive' : ''}`, true),
+						button(_('已关闭'), 'boot', `thunder-state-button ${!s.enabled ? 'active cbi-button-negative' : ''}`, false)
+					])
+				]),
+				E('div', { 'class': 'thunder-panel thunder-web-panel' }, [
+					webPanelButton(s.bind)
 				])
 			]),
 			logbox(_('最近的操作输出'), [ s.install_log, s.service_log ].filter(Boolean).join('\n\n')),
